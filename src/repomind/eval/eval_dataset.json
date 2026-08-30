@@ -1,0 +1,170 @@
+[
+  {
+    "id": "cl-01",
+    "question": "What hashing algorithm does hash_password use, and how many iterations?",
+    "category": "code_lookup",
+    "expected_answer_summary": "hash_password uses PBKDF2-HMAC-SHA256 with 100,000 iterations and a random 16-byte salt, returning a '<salt_hex>:<hash_hex>' string.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "cl-02",
+    "question": "What does decode_access_token return if the token has expired?",
+    "category": "code_lookup",
+    "expected_answer_summary": "decode_access_token returns None if the signature is invalid or if the expiry timestamp is earlier than the current time.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "cl-03",
+    "question": "What happens when ConnectionPool.checkout() is called and max_connections is already reached?",
+    "category": "code_lookup",
+    "expected_answer_summary": "checkout() raises a RuntimeError with the message 'connection pool exhausted'.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "cl-04",
+    "question": "What does deactivate_user do, and what does it return if the user doesn't exist?",
+    "category": "code_lookup",
+    "expected_answer_summary": "deactivate_user sets is_active to False on the user record (a soft delete) and returns True; if the user_id isn't found, it returns False without raising.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "cl-05",
+    "question": "What exception does create_user raise, and under what condition?",
+    "category": "code_lookup",
+    "expected_answer_summary": "create_user raises ValueError with a message like 'username already exists: <username>' if the username is already present in the username index.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "cl-06",
+    "question": "What regex pattern does validate_email use, and does it guarantee RFC 5322 compliance?",
+    "category": "code_lookup",
+    "expected_answer_summary": "validate_email uses the pattern ^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$, a lightweight check that is explicitly not RFC 5322-compliant.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "ht-01",
+    "question": "How would I add retry-with-backoff behavior to a function that calls an unreliable external service?",
+    "category": "how_to",
+    "expected_answer_summary": "Wrap the function with the retry() decorator from utils.py, e.g. @retry(max_attempts=3, delay_seconds=0.5, backoff=2.0), which retries on any exception with exponential backoff.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "ht-02",
+    "question": "How do I create a new user and then look them up by username afterward?",
+    "category": "how_to",
+    "expected_answer_summary": "Call create_user(username, email, password_hash) to insert the record, then get_user_by_username(username) to retrieve it; the latter returns None if not found.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "ht-03",
+    "question": "How would I check whether a user's access token is still valid without raising an exception?",
+    "category": "how_to",
+    "expected_answer_summary": "Call decode_access_token(token) and check if the result is None (invalid/expired) or a (username, expiry) tuple (valid) — it never raises, so no try/except is needed.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "ht-04",
+    "question": "How do I run schema migrations from version 2 to version 4?",
+    "category": "how_to",
+    "expected_answer_summary": "Call run_migration(target_version=4, current_version=2); it will apply and log the v3 and v4 steps in order and return the log list.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "ht-05",
+    "question": "How would I format a stored created_at timestamp for display to a user?",
+    "category": "how_to",
+    "expected_answer_summary": "Pass the epoch seconds value (e.g. user.created_at) to format_timestamp(), optionally with a custom strftime-style fmt string; defaults to '%Y-%m-%d %H:%M:%S UTC'.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "ht-06",
+    "question": "How do I safely release a database connection back to the pool after I'm done with it?",
+    "category": "how_to",
+    "expected_answer_summary": "Call .close() on the Connection object returned by ConnectionPool.checkout(); close() calls the pool's checkin() internally and is idempotent via the closed flag.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "cn-01",
+    "question": "How does the login lockout policy work end-to-end, from a failed login to the account being locked?",
+    "category": "conceptual",
+    "expected_answer_summary": "authenticate_user tracks failed attempts per username in a rolling LOCKOUT_WINDOW_SECONDS (300s) window; once recent failures reach MAX_ATTEMPTS (5), further attempts are rejected with reason 'account_locked' until the window elapses; a successful login clears the failure history.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "cn-02",
+    "question": "How does the ConnectionPool simulate real database connection semantics without an actual database?",
+    "category": "conceptual",
+    "expected_answer_summary": "ConnectionPool tracks an in-use counter and raises when max_connections is exceeded on checkout(); Connection objects call back into the pool's checkin() on close(), mimicking real pool checkout/release behavior at a small scale with no real network connections.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "cn-03",
+    "question": "How are access tokens designed to avoid needing server-side session storage?",
+    "category": "conceptual",
+    "expected_answer_summary": "Tokens are stateless: create_access_token bundles username, expiry, and a nonce into a payload signed with a SHA-256 digest; decode_access_token recomputes and compares the signature and checks expiry, so validation needs no stored session data.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "cn-04",
+    "question": "How does the schema migration system decide what changes to apply between two versions?",
+    "category": "conceptual",
+    "expected_answer_summary": "run_migration walks version-by-version from current_version to target_version, applying a hardcoded log/action per known version number (1 through 4) and treating unrecognized higher versions as no-ops; it raises if asked to migrate backwards.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "cn-05",
+    "question": "Why is authenticate_user implemented as one larger function instead of several smaller ones?",
+    "category": "conceptual",
+    "expected_answer_summary": "Per the function's own docstring, it's kept unified to mirror how auth flows are often written in real small/mid-size codebases, and deliberately to give the AST-aware code chunker a large atomic unit to test chunking against.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "cn-06",
+    "question": "How does password verification avoid timing attacks?",
+    "category": "conceptual",
+    "expected_answer_summary": "verify_password re-derives a hash from the candidate password using the stored salt, then compares the resulting hash to the stored hash using hmac.compare_digest, a constant-time comparison function, rather than a standard string equality check.",
+    "expected_grounded": true,
+    "expected_refusal": false
+  },
+  {
+    "id": "adv-01",
+    "question": "What's the rate limit on password reset requests?",
+    "category": "adversarial",
+    "expected_answer_summary": "Documentation describes a 3-requests-per-hour rate limit via request_password_reset/complete_password_reset, but neither function exists anywhere in auth.py. Correct behavior is to refuse or explicitly flag the doc/code mismatch, not state the number confidently.",
+    "expected_grounded": false,
+    "expected_refusal": true
+  },
+  {
+    "id": "adv-02",
+    "question": "How does this codebase rate-limit its own API endpoints to prevent abuse?",
+    "category": "adversarial",
+    "expected_answer_summary": "Neither the code nor the docs describe any API-level rate limiting mechanism (the only rate-limit concept mentioned anywhere is the documented-but-unimplemented password-reset limit). Correct behavior is to state that no such mechanism is present in the provided context, not to infer or fabricate one.",
+    "expected_grounded": false,
+    "expected_refusal": true
+  },
+  {
+    "id": "adv-03",
+    "question": "What password complexity requirements (minimum length, special characters, etc.) does the system enforce when a user sets a password?",
+    "category": "adversarial",
+    "expected_answer_summary": "Neither auth.py nor auth.md defines any password complexity/strength validation — hash_password and create_user accept any string. Correct behavior is to state this isn't present in the provided context rather than assuming reasonable-sounding defaults exist.",
+    "expected_grounded": false,
+    "expected_refusal": true
+  }
+]
