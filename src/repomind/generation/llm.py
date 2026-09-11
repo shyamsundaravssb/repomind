@@ -49,7 +49,8 @@ def get_llm(temperature: float = 0.0) -> ChatGroq:
             "GROQ_API_KEY not set. Add it to your .env file (see .env.example)."
         )
 
-    return ChatGroq(model=MODEL_NAME, temperature=temperature)
+    return ChatGroq(model=MODEL_NAME, temperature=temperature )
+
 
 
 def answer_question(question: str, context: str) -> str:

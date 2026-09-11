@@ -47,7 +47,7 @@ DATASET_NAME = "repomind-eval-v1"
 # 429s against Groq's per-minute rate limit. Does not help with the daily
 # token cap (TPD) — that requires waiting for the quota window to reset,
 # or reducing how many expensive (RAGAS) calls are made per run.
-PACING_DELAY_SECONDS = 10
+PACING_DELAY_SECONDS = 60
 
 
 def graph_target(inputs: dict) -> dict:
@@ -180,14 +180,44 @@ def run_evaluation(dataset_name: str = DATASET_NAME, experiment_prefix: str = "r
     logger.info("Combined evaluation run complete.")
     return results
 
+def rerun_ragas_evaluators(experiment_name: str):
+    """
+    Re-run RAGAS evaluators against an existing experiment's completed runs,
+    without re-invoking the graph target function. Use this to resume a
+    RAGAS pass that completed all target runs (21/21) but only partially
+    scored them (e.g. 4/21) due to hitting the daily token rate limit
+    mid-evaluation — this only spends tokens on the evaluators themselves,
+    not on re-running the graph.
+
+    Args:
+        experiment_name: The exact experiment name/ID from the LangSmith UI
+            (e.g. "repomind-ragas-<hash>") to re-score.
+
+    Returns:
+        The LangSmith experiment results object.
+    """
+    logger.info("Re-running RAGAS evaluators against existing experiment=%r", experiment_name)
+
+    results = evaluate(
+        experiment_name,  # passing an experiment name/ID instead of a target function
+        evaluators=[ragas_faithfulness, ragas_context_precision, ragas_context_recall],
+        max_concurrency=1,
+    )
+
+    logger.info("RAGAS re-evaluation complete.")
+    return results
+
 
 if __name__ == "__main__":
     import sys
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    # Usage: uv run python -m repomind.eval.run_eval [correctness|ragas|combined]
-    # Defaults to correctness (cheapest, safest to re-run) if no argument given.
+    # Usage:
+    #   uv run python -m repomind.eval.run_eval correctness
+    #   uv run python -m repomind.eval.run_eval ragas
+    #   uv run python -m repomind.eval.run_eval combined
+    #   uv run python -m repomind.eval.run_eval rerun-ragas <experiment_name>
     mode = sys.argv[1] if len(sys.argv) > 1 else "correctness"
 
     if mode == "correctness":
@@ -196,6 +226,11 @@ if __name__ == "__main__":
         run_ragas_eval()
     elif mode == "combined":
         run_evaluation()
+    elif mode == "rerun-ragas":
+        if len(sys.argv) < 3:
+            print("Usage: uv run python -m repomind.eval.run_eval rerun-ragas <experiment_name>")
+            sys.exit(1)
+        rerun_ragas_evaluators(sys.argv[2])
     else:
-        print(f"Unknown mode: {mode!r}. Use 'correctness', 'ragas', or 'combined'.")
+        print(f"Unknown mode: {mode!r}. Use 'correctness', 'ragas', 'combined', or 'rerun-ragas'.")
         sys.exit(1)
